@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:ex="http://example.com/ns#">
+<rdf:Description rdf:nodeID="a0">
+<ex:z rdf:nodeID="a0" />
+<ex:x rdf:nodeID="a1" />
+<ex:z rdf:nodeID="a1" />
+<ex:x rdf:nodeID="a2" />
+<ex:y rdf:nodeID="a2" />
+<ex:y rdf:nodeID="a3" />
+<ex:z rdf:nodeID="a3" />
+<ex:x rdf:nodeID="a4" />
+</rdf:Description>
+<rdf:Description rdf:nodeID="a1">
+<ex:y rdf:nodeID="a0" />
+<ex:z rdf:nodeID="a1" />
+<ex:z rdf:nodeID="a2" />
+<ex:x rdf:nodeID="a3" />
+<ex:z rdf:nodeID="a3" />
+<ex:y rdf:nodeID="a4" />
+<ex:z rdf:nodeID="a4" />
+</rdf:Description>
+<rdf:Description rdf:nodeID="a2">
+<ex:x rdf:nodeID="a0" />
+<ex:y rdf:nodeID="a0" />
+<ex:y rdf:nodeID="a1" />
+<ex:x rdf:nodeID="a2" />
+<ex:y rdf:nodeID="a2" />
+<ex:x rdf:nodeID="a3" />
+<ex:y rdf:nodeID="a3" />
+<ex:z rdf:nodeID="a3" />
+</rdf:Description>
+<rdf:Description rdf:nodeID="a3">
+<ex:y rdf:nodeID="a0" />
+<ex:z rdf:nodeID="a0" />
+<ex:x rdf:nodeID="a1" />
+<ex:y rdf:nodeID="a1" />
+<ex:y rdf:nodeID="a2" />
+<ex:z rdf:nodeID="a2" />
+<ex:y rdf:nodeID="a3" />
+<ex:z rdf:nodeID="a3" />
+<ex:z rdf:nodeID="a4" />
+</rdf:Description>
+<rdf:Description rdf:nodeID="a4">
+<ex:z rdf:nodeID="a0" />
+<ex:x rdf:nodeID="a1" />
+<ex:y rdf:nodeID="a2" />
+<ex:z rdf:nodeID="a2" />
+<ex:x rdf:nodeID="a3" />
+<ex:y rdf:nodeID="a4" />
+</rdf:Description>
+</rdf:RDF>

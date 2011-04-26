@@ -24,6 +24,10 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 	{
 		foreach($trips as $trip)
 		{
+			if($trip->predicate == RDF::rdf.'about' || $trip->predicate == RDF::rdf.'ID' || $trip->predicate == RDF::rdf.'nodeID')
+			{
+				continue;
+			}
 			$result[] = '<' . $subj . '> <' . $trip->predicate . '> {' . strval($trip->object) . '}';
 		}
 	}
@@ -181,7 +185,7 @@ class BNode
 			{
 				$loop = array($this);
 			}
-			if(!strcmp($triple->predicate, RDF::rdf.'ID') || !strcmp($triple->predicate, RDF::rdf.'about')) continue;
+			if(!strcmp($triple->predicate, RDF::rdf.'ID') || !strcmp($triple->predicate, RDF::rdf.'about') || !strcmp($triple->predicate, RDF::rdf.'nodeID')) continue;
 			if($triple->object instanceof RDFURI)
 			{
 				$hashValue = $this->resolveObject($triple->object, $seen, $triples, $bnodes, $depth, $loop);

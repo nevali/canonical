@@ -1,0 +1,24 @@
+#!/usr/bin/python
+
+## From http://pastebin.com/yP0ebbQR
+## By Jos van den Oever (vandenoever on #swig)
+
+import random
+
+max = 5
+
+print '<?xml version="1.0" encoding="UTF-8" ?>'
+print '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:ex="http://example.com/ns#">'
+
+for i in range(0, max):
+        print '<rdf:Description rdf:nodeID="a' + str(i) + '">'
+        for j in range(0, max):
+                if random.randint(0, 1) == 1:
+                        print '<ex:x rdf:nodeID="a' + str(j) + '" />'
+                if random.randint(0, 1) == 1:
+                        print '<ex:y rdf:nodeID="a' + str(j) + '" />'
+                if random.randint(0, 1) == 1:
+                        print '<ex:z rdf:nodeID="a' + str(j) + '" />'
+        print '</rdf:Description>'
+
+print '</rdf:RDF>'
