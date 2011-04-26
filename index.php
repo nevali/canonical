@@ -16,6 +16,7 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 	$result = array();
 	$triples = RDF::tripleSetFromXMLString($_POST['rdf']);
 	$subjects = array();
+	$nodes = array();
 	$result[] = "Source:";
 	foreach($triples->triples as $subj => $trips)
 	{
