@@ -16,6 +16,14 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 	$result = array();
 	$triples = RDF::tripleSetFromXMLString($_POST['rdf']);
 	$subjects = array();
+	$result[] = "Source:";
+	foreach($triples->triples as $subj => $trips)
+	{
+		foreach($trips as $trip)
+		{
+			$result[] = '<' . $subj . '> <' . $trip->predicate . '> {' . strval($trip->object) . '}';
+		}
+	}
 	foreach($triples->triples as $k => $subject)
 	{
 		$nodes[$k] = new BNode($k, $subject);
@@ -24,6 +32,7 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 //	print_r(array_keys($nodes));
 	$seen = array();
 	$replace = array();
+	$counter = 0;
 	foreach($nodes as $node)
 	{
 		$loop = array();
@@ -34,9 +43,13 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 			$subj = '_:' . str_replace(array('{', '}'), array('', ''), $hash);
 			$replace[$node->subject] = $subj;
 		}
+		$counter++;
 	}
 //	print_r(array_keys($nodes));
-//	$result[] = "Replacing subjects";
+	if(!empty($_REQUEST['debug']))
+	{
+		$result[] = "Replacing subjects";
+	}
 //	print_r($replace);
 	foreach($replace as $was => $now)
 	{
@@ -45,6 +58,7 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 			if(!strcmp($node->subject, $was))
 			{
 //				$result[] = "Replacing " . $node->subject . " with " . $now;
+				$node->was = strval($node->subject);
 				$node->subject = $now;
 			}
 			foreach($node->triples as $k => $triple)
@@ -63,7 +77,10 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 		}
 	}
 //	print_r(array_keys($nodes));
-//	$result[] = "Final pass";
+	if(!empty($_REQUEST['debug']))
+	{
+		$result[] = "Final pass";
+	}
 	foreach($nodes as $node)
 	{
 		if(!isset($node->hashValue))
@@ -72,15 +89,16 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 			$loop = array();
 			$node->resolve($seen, $triples, $nodes, 1, $loop);
 		}
-		$subjects[$node->subject] = $node;
+		$subjects[] = $node;
 	}
 	ksort($subjects);
-//	$result[] = "Result:";
+	$result[] = "Result:";
 	foreach($subjects as $subj)
 	{
+		$result[] = (isset($subj->was) ? '[was ' . $subj->was . ']' : '<' . $subj->subject . '>') . ': ' . count($subj->triples) . ' triples:';
 		foreach($subj->triples as $trip)
 		{
-			$result[] = '<' . $subj->subject . '> <' . $trip->predicate . '> {' . strval($trip->object) . '}';
+			$result[] = (isset($subj->was) ? '[was ' . $subj->was . '] ' : '') . '<' . $subj->subject . '> <' . $trip->predicate . '> {' . strval($trip->object) . '}';
 		}
 	}
 //	print_r($triples);
@@ -103,14 +121,21 @@ class BNode
 	
 	public function resolve(&$seen, $triples, $bnodes, $depth = 1, &$loop)
 	{
+		global $result;
+		
 		$seen[] = $this;
-		$loop[] = $this;
 		$values = array();
+		$c = 0;
+		$hashes = array();
+		if(!empty($_REQUEST['debug']))
+		{
+			$result[] = str_repeat('+', $depth) . ' Resolving ' . $this->subject;
+		}
 		foreach($this->triples as $triple)
 		{
 			if($depth == 1)
 			{
-				$loop = array();
+				$loop = array($this);
 			}
 			if(!strcmp($triple->predicate, RDF::rdf.'ID') || !strcmp($triple->predicate, RDF::rdf.'about')) continue;
 			if($triple->object instanceof RDFURI)
@@ -137,11 +162,18 @@ class BNode
 				$hashValue = '""""' . strval($triple->object) . '""""';
 			}
 			$triple->hashValue = '<' . $triple->predicate . '> ' . $hashValue;
-			$values[$triple->hashValue] = $triple;
+			$values[$triple->hashValue . ' ' . $c] = $triple;
+			$c++;
+			$hashes[] = $triple->hashValue;
 		}
 		ksort($values);
+		sort($hashes);
 		$this->triples = array_values($values);
-		$this->hashValue = '{' . sha1(implode("\n", array_keys($values))) . '}';
+		if(!empty($_REQUEST['debug']))
+		{
+			$result[] = str_repeat('-', $depth) . ' ' . implode(', ' , $hashes);
+		}
+		$this->hashValue = '{' . sha1(implode("\n", $hashes)) . '}';
 		return $this->hashValue;
 	}
 
@@ -160,12 +192,18 @@ class BNode
 			}
 			if(in_array($node, $loop))
 			{
-//				$result[] = 'Found loop while resolving ' . strval($object) . ' from ' . strval($this->subject) . ' at depth ' . $depth;
-//				$result[] = implode(', ', $loop);
+				if(!empty($_REQUEST['debug']))
+				{
+					$result[] = 'Found loop while resolving ' . strval($object) . ' from ' . strval($this->subject) . ' at depth ' . $depth;
+					$result[] = implode(', ', $loop);
+				}
 				return '<!loop!>';
 			}
 //			$result[] = 'Recursing into ' . strval($node) . ' from '. strval($this->subject) . ' at depth ' . $depth;
-			return '#' . $node->resolve($seen, $triples, $bnodes, $depth + 1, $loop);
+			$loop[] = $node;
+			$res = '#' . $node->resolve($seen, $triples, $bnodes, $depth + 1, $loop);
+			array_shift($loop);
+			return $res;
 		}
 		else
 		{
