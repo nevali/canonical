@@ -1,0 +1,3 @@
+[submodule "eregansu"]
+	path = eregansu
+	url = git://github.com/nexgenta/eregansu.git

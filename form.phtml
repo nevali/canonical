@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	<meta charset="UTF-8">
+	<title>RDF Canonicalisation</title>
+  </head>
+  <body>
+	<form method="POST">
+	  <textarea name="rdf" rows="20" cols="80"><?php e(@$_POST['rdf']); ?></textarea>
+	  <input type="submit">
+	</form>
+	<php echo implode("\n", $result); ?>
+  </body>
+</html>
