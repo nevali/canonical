@@ -104,6 +104,7 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 	{
 		$result[] = "Final pass";
 	}
+	$c = 0;
 	foreach($nodes as $node)
 	{
 		if(!isset($node->hashValue))
@@ -112,7 +113,8 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 			$loop = array();
 			$node->resolve($seen, $triples, $nodes, 1, $loop);
 		}
-		$subjects[] = $node;
+		$subjects[strval($node->subject) . ' ' . $c] = $node;
+		$c++;
 	}
 	ksort($subjects);
 	$result[] = "Result:";
