@@ -5,10 +5,44 @@
 	<title>RDF Canonicalisation</title>
   </head>
   <body>
+	 <h1>RDF Canonical Ordering Test</h1>
+	 <p>
+	 Fill in a well-formed <strong><u>RDF/XML</u></strong> document and press the <i>Submit</i> button. The document will
+	 be parsed and the set of triples will be emitted. The ordering of the triples should be consistent irrespective
+	 of the input order of the document. Non-ASCII results are undefined — there's no collation magic as yet. If it
+	 breaks, please tell <samp>nevali</samp> on <samp>#swig</samp> how you broke it. There will almost certainly
+	 be ways that you can do it.
+	 </p>
+	 <p>
+	   (Apologies for the lack of support for other formats. I had RDF/XML-to-triples code already. The algorithm itself is
+	   obviously serialisation-independent).
+	 </p>
+	 <p>
+	   Ignore the formatting of objects in the triple output; it's just cosmetic laziness, not a proper serialisation.
+	   It's the order of the triples that's important.
+	 </p>
+<?php
+
+if(!strlen(@$_POST['rdf']))
+{
+$_POST['rdf'] = '<?xml version="1.0" encoding="UTF-8" ?>' . "\n" .
+   '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">' . "\n" .
+   '</rdf:RDF>';
+}
+?>
 	<form method="POST">
 	  <textarea name="rdf" rows="20" cols="80"><?php e(@$_POST['rdf']); ?></textarea>
 	  <input type="submit">
-	</form>
-	<php echo implode("\n", $result); ?>
+	</form>	 
+	<?php
+	 if(isset($result) && is_array($result))
+	 {
+		 echo '<pre>';
+		 ob_start();
+		 echo implode("\n", $result);
+		 e(ob_get_clean());
+		 echo '</pre>';
+	 }
+     ?>
   </body>
 </html>
