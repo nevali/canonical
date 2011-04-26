@@ -6,6 +6,15 @@ set_time_limit(0);
 
 uses('rdf');
 
+function emit($str)
+{
+	if(!empty($_REQUEST['debug']))
+	{
+		echo "<pre>" . _e($str) . "</pre>";
+		flush();
+	}
+}
+
 $result = null;
 
 if(get_magic_quotes_gpc())
@@ -19,7 +28,7 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 	$triples = RDF::tripleSetFromXMLString($_POST['rdf']);
 	$subjects = array();
 	$nodes = array();
-	$result[] = "Source:";
+	$result[] = "Source:";	
 	foreach($triples->triples as $subj => $trips)
 	{
 		foreach($trips as $trip)
@@ -31,6 +40,7 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 			$result[] = '<' . $subj . '> <' . $trip->predicate . '> {' . strval($trip->object) . '}';
 		}
 	}
+	emit('Processing...');
 	foreach($triples->triples as $k => $subject)
 	{
 		$nodes[$k] = new BNode($k, $subject);
@@ -45,17 +55,17 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 		$loop = array();
 		if($node->bNode)
 		{
-//			$result[] = 'Resolving node ' . $node->subject;
+			emit('Resolving node ' . $node->subject);
 			$hash = $node->resolve($seen, $triples, $nodes, 1, $loop);
 			$subj = '_:' . str_replace(array('{', '}'), array('', ''), $hash);
 			$replace[$node->subject] = $subj;
 		}
 		$counter++;
 	}
-//	print_r(array_keys($nodes));
 	if(!empty($_REQUEST['debug']))
 	{
-		$result[] = "Replacing subjects";
+//		echo '<pre>'; print_r(array_keys($nodes)); echo '</pre>';
+		emit("Replacing subjects:");
 	}
 //	print_r($replace);
 	foreach($replace as $was => $now)
@@ -71,10 +81,8 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 				}
 			}
 		}
-		if(!empty($_REQUEST['debug']))
-		{
-			$result[] = 'Referencing nodes: ' . implode(", ", $ndlist);
-		}
+		sort($ndlist);
+		emit('Referencing nodes: ' . implode(", ", $ndlist));
 		$now = '_:' . sha1(substr($now, 2) . "\n" . implode("\n", $ndlist));
 		foreach($nodes as $node)
 		{
@@ -100,10 +108,7 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 		}
 	}
 //	print_r(array_keys($nodes));
-	if(!empty($_REQUEST['debug']))
-	{
-		$result[] = "Final pass";
-	}
+	emit("Final pass");
 	$c = 0;
 	foreach($nodes as $node)
 	{
@@ -138,6 +143,7 @@ class BNode
 	public $hashValue;
 	public $nonDeterministicHash;
 	public $bNode;
+	public $objectHashes = array();
 
 	public function __construct($subject, $triples)
 	{
@@ -177,10 +183,7 @@ class BNode
 		$values = array();
 		$c = 0;
 		$hashes = array();
-		if(!empty($_REQUEST['debug']))
-		{
-			$result[] = str_repeat('+', $depth) . ' Resolving ' . $this->subject;
-		}
+		emit(str_repeat('+', $depth) . ' Resolving ' . $this->subject);
 		foreach($this->triples as $triple)
 		{
 			if($depth == 1)
@@ -219,10 +222,7 @@ class BNode
 		ksort($values);
 		sort($hashes);
 		$this->triples = array_values($values);
-		if(!empty($_REQUEST['debug']))
-		{
-			$result[] = str_repeat('-', $depth) . ' ' . implode(', ' , $hashes);
-		}
+		emit(str_repeat('-', $depth) . ' ' . implode(', ' , $hashes));
 		$this->hashValue = '{' . sha1(implode("\n", $hashes)) . '}';
 		return $this->hashValue;
 	}
@@ -230,35 +230,39 @@ class BNode
 	public function resolveObject($object, &$seen, $triples, $bnodes, $depth, &$loop)
 	{
 		global $result;
-
-		if(!strncmp($object, '_:', 2) || !strncmp($object, '#', 1))
+		
+		$obj = strval($object);
+		if(!isset($this->objectHashes[$obj]))
 		{
-			/* Recurse */
-			@$node = $bnodes[strval($object)];
-			if($node === null)
+			if(!strncmp($obj, '_:', 2) || !strncmp($obj, '#', 1))
 			{
-//				$result[] = 'Found dangling ref to ' . strval($object) . ' from ' . strval($this->subject) . ' at depth ' . $depth;
-				return '<!dangling!>';
-			}
-			if(in_array($node, $loop))
-			{
-				if(!empty($_REQUEST['debug']))
+				/* Recurse */
+				@$node = $bnodes[$obj];
+				if($node === null)
 				{
-					$result[] = 'Found loop while resolving ' . strval($object) . ' from ' . strval($this->subject) . ' at depth ' . $depth;
-					$result[] = implode(', ', $loop);
+//				$result[] = 'Found dangling ref to ' . strval($object) . ' from ' . strval($this->subject) . ' at depth ' . $depth;
+					$this->objectHashes[$obj] = '<!dangling!>';
 				}
-				return '<!loop!>';
-			}
+				else if(in_array($node, $loop))
+				{
+					emit('Found loop while resolving ' . strval($object) . ' from ' . strval($this->subject) . ' at depth ' . $depth);
+					emit(implode(', ', $loop));
+					$this->objectHashes[$obj] = '<!loop!>';
+				}
+				else
+				{
 //			$result[] = 'Recursing into ' . strval($node) . ' from '. strval($this->subject) . ' at depth ' . $depth;
-			$loop[] = $node;
-			$res = '#' . $node->resolve($seen, $triples, $bnodes, $depth + 1, $loop);
-			array_shift($loop);
-			return $res;
+					$loop[] = $node;
+					$this->objectHashes[$obj] = '#' . $node->resolve($seen, $triples, $bnodes, $depth + 1, $loop);
+					array_shift($loop);					
+				}
+			}
+			else
+			{
+				$this->objectHashes[$obj] = '<' . $obj . '>';
+			}
 		}
-		else
-		{
-			return '<' . strval($object) . '>';
-		}
+		return $this->objectHashes[$obj];
 	}
 
 	public function __toString()
