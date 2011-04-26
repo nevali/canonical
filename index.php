@@ -37,7 +37,7 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 	foreach($nodes as $node)
 	{
 		$loop = array();
-		if(!strncmp($node->subject, '_:', 2) || !strncmp($node->subject, '#', 1))
+		if($node->bNode)
 		{
 //			$result[] = 'Resolving node ' . $node->subject;
 			$hash = $node->resolve($seen, $triples, $nodes, 1, $loop);
@@ -54,6 +54,22 @@ if(isset($_POST['rdf']) && strlen($_POST['rdf']))
 //	print_r($replace);
 	foreach($replace as $was => $now)
 	{
+		$ndlist = array();
+		foreach($nodes as $node)
+		{
+			foreach($node->triples as $triple)
+			{
+				if($triple->object instanceof RDFURI && !strcmp($triple->object, $was))
+				{
+					$ndlist[] = $node->nonDeterministicHash . ' ' . $triple->predicate;
+				}
+			}
+		}
+		if(!empty($_REQUEST['debug']))
+		{
+			$result[] = 'Referencing nodes: ' . implode(", ", $ndlist);
+		}
+		$now = '_:' . sha1(substr($now, 2) . "\n" . implode("\n", $ndlist));
 		foreach($nodes as $node)
 		{
 			if(!strcmp($node->subject, $was))
@@ -112,12 +128,37 @@ class BNode
 	public $subject;
 	public $triples;
 	public $hashValue;
+	public $nonDeterministicHash;
+	public $bNode;
 
 	public function __construct($subject, $triples)
 	{
 		$this->subject = strval($subject);
 		$this->triples = $triples;
 		$this->hashValue = null;
+		$hval = array();
+		if(!strncmp($this->subject, '_:', 2) || !strncmp($this->subject, '#', 1))
+		{
+			$hval[] = '#';
+			$this->bNode = true;
+		}
+		else
+		{
+			$hval[] = strval($this->subject);
+		}
+		foreach($this->triples as $trip)
+		{
+			$hval[] = $trip->predicate;
+			if(!strncmp($trip->object, '_:', 2) || !strncmp($trip->object, '#', 1))
+			{
+				$hval[] = '#';
+			}
+			else
+			{
+				$hval[] = strval($trip->object);
+			}
+		}
+		$this->nonDeterministicHash = sha1(implode("\n", $hval));
 	}
 	
 	public function resolve(&$seen, $triples, $bnodes, $depth = 1, &$loop)
