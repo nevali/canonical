@@ -2,6 +2,8 @@
 
 require_once('eregansu/lib/common.php');
 
+set_time_limit(0);
+
 uses('rdf');
 
 $result = null;
