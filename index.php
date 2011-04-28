@@ -26,6 +26,10 @@ function stringify($thing)
 {
 	if($thing instanceof RDFURI)
 	{
+		if(!empty($thing->dangling))
+		{
+			return '!dangling!';
+		}
 		$u = strval($thing);
 		if(!strncmp($u, '#', 1))
 		{
@@ -164,7 +168,11 @@ class GraphHasher
 		foreach($this->nodes as $node)
 		{
 			$node->updateHash();
-			$this->replacements[$node->subject] = '_:' . $node->hashValue;
+			$subj = strval($node->subject);
+			if(!strncmp($subj, '#', 1) || !strncmp($subj, '_:', 2))
+			{
+				$this->replacements[$node->subject] = '_:' . $node->hashValue;
+			}
 		}
 	}
 
@@ -307,14 +315,19 @@ class BNode
 				continue;
 			}
 			$obj = strval($triple->object);
-			if(!isset($nodes[$obj]))
+			if(!strncmp($obj, '#', 1) || !strncmp($obj, '_:', 2))
 			{
-				emit('Failed to locate ' . $obj);
-				continue;
+				if(!isset($nodes[$obj]))
+				{
+					emit('Failed to locate ' . $obj);
+					$triple->object->value = '!dangling!';
+					$triple->object->dangling = true;
+					continue;
+				}
+				$inboundValue = '<' . $triple->predicate . '> ' . $this->nonDeterministicHash;
+				emit('Adding ' . $inboundValue . ' to ' . $obj . ' from ' . $this->subject);
+				$nodes[$obj]->inbound[] = $inboundValue;
 			}
-			$inboundValue = '<' . $triple->predicate . '> ' . $this->nonDeterministicHash;
-			emit('Adding ' . $inboundValue . ' to ' . $obj . ' from ' . $this->subject);
-			$nodes[$obj]->inbound[] = $inboundValue;
 		}
 	}
 
