@@ -200,6 +200,7 @@ class GraphHasher
 	public function sort()
 	{
 		$c = 0;
+		$nodeList = array();
 		foreach($this->nodes as $node)
 		{
 			$k = sprintf('%s %04d', $node->subject, $c);
