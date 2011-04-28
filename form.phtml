@@ -24,6 +24,19 @@
 	 <p>
 	 You'll find a particularly evil test-case <a href="https://gist.github.com/942191">here</a>.
      </p>
+	 <p>
+	   Code on <a href="https://github.com/nevali/canonical">GitHub</a>.
+	 </p>
+	 <p>
+	   The algorithm generates identifiers for bnodes based upon two concrete aspects of the nodes:
+	 </p>
+	 <ul>
+	   <li>The non-determinsitic portions of the triples (i.e., anything which is a bnode reference is replaced with a fixed placeholder — for example, "_:a owl:sameAs _:b" becomes "# owl:sameAs #"). This set is sorted, then hashed to give a "non-deterministic hash value" for the node.</li>
+	   <li>The predicates and subject's non-deterministic hash values of all of the triples where that triple is an object — this has the effect of fingerprinting the bnode on the basis of its relationship with other nodes.</li>
+	 </ul>
+	 <p>
+	   The non-deterministic hash value is combined with the set of inbound references (which is itself sorted lexographically) and hashed to produce the final identifier of the bnode, which is then propagated to whichever triples use that node as an object.
+	 </p>
 <?php
 
 if(!strlen(@$_POST['rdf']))
